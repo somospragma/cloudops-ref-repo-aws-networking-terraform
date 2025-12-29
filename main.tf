@@ -1,161 +1,81 @@
-###########################################
-######### Security Group Module ###########
-###########################################
-
-module "security_groups" {
-  #Before using the module, once you have the new location of your repo, you need to change the source value.
-  source = "git::https://github.com/somospragma/cloudops-ref-repo-aws-sg-terraform.git?ref=feature/sg-module-init"
-
-  providers = {
-    aws.project = aws.pra_idp_dev
-  }
-
-  environment = var.environment
-  client      = var.client
-  project     = var.project
-
-  sg_config = [
-    {
-      application   = var.application
-      service       = var.service
-      functionality = var.functionality
-      description   = "Security group for RDS Aurora"
-      vpc_id        = data.aws_vpc.vpc.id
-
-      ingress = [
-        {
-          from_port       = 3306
-          to_port         = 3306
-          protocol        = "tcp"
-          cidr_blocks     = ["0.0.0.0/0"]
-          security_groups = []
-          prefix_list_ids = []
-          self            = false
-          description     = "Allow HTTPS inbound RDS Aurora"
-        }
-      ]
-
-      egress = [
-        {
-          from_port       = 0
-          to_port         = 0
-          protocol        = "-1"
-          cidr_blocks     = ["0.0.0.0/0"]
-          prefix_list_ids = []
-          description     = "Allow all outbound traffic"
-        }
-      ]
-    }
-  ]
-}
-
-###########################################
-############### KMS Module ################
-###########################################
-
-module "kms" {
-  #Before using the module, once you have the new location of your repo, you need to change the source value.
-  source = "git::https://github.com/somospragma/cloudops-ref-repo-aws-kms-terraform.git?ref=feature/kms-module-init"
+############################################################################
+# Modulo VPC - Networking Base Pragma
+############################################################################
+module "vpc" {
+  source = "git::https://github.com/somospragma/cloudops-ref-repo-aws-vpc-terraform.git?ref=v1.0.2"
   
   providers = {
-    aws.project = aws.pra_idp_dev
+    aws.project = aws.principal
   }
 
-  environment = var.environment
+  # Variables obligatorias de nomenclatura
   client      = var.client
   project     = var.project
-  service     = var.service
+  environment = var.environment
+  aws_region  = var.region
+  
+  # Configuración de la VPC
+  cidr_block                 = var.cidr_block
+  instance_tenancy           = var.instance_tenancy
+  enable_dns_support         = var.enable_dns_support
+  enable_dns_hostnames       = var.enable_dns_hostnames
+  flow_log_retention_in_days = var.flow_log_retention_in_days
 
-  kms_config = [
-    {
-      description         = "Key for securing RDS cluster data"
-      enable_key_rotation = true
-      statements = [
-        {
-          sid         = "AllowRDSAccess"
-          actions     = ["kms:Encrypt", "kms:Decrypt", "kms:GenerateDataKey"]
-          resources   = ["*"]
-          effect      = "Allow"
-          type        = "AWS"
-          identifiers = [
-            "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
-          ]
-          condition = []
-        }
-      ]
-      application_id = "${var.application}"
-    }
-  ]
+  # Configuración de subredes
+  subnet_config = var.subnet_config
+  
+  # Configuración de gateways
+  create_igw = var.create_igw
+  create_nat = var.create_nat
+  
+  # Configuración de NAT Gateway
+  nat_mode          = var.nat_mode
+  nat_regional_mode = var.nat_regional_mode
+  
+  # Tags adicionales (incluye tags de EKS)
+  additional_tags = var.additional_tags
 }
 
-###########################################
-############### RDS Module ################
-###########################################
-
-module "rds-aurora" {
-  #Before using the module, once you have the new location of your repo, you need to change the source value.
-  source = "git::https://github.com/somospragma/cloudops-ref-repo-aws-rds-terraform.git?ref=feature/rds-module-init"
-   
+############################################################################
+# Security Groups - Usando módulo de referencia
+############################################################################
+module "security_groups" {
+  source = "git::https://github.com/somospragma/cloudops-ref-repo-aws-sg-terraform.git?ref=v1.0.0"
+  
   providers = {
-    aws.principal = aws.pra_idp_dev
-    aws.secondary = aws.pra_idp_dev_2
+    aws.project = aws.principal
   }
 
-  environment = var.environment
+  # Variables obligatorias de nomenclatura
   client      = var.client
   project     = var.project
-  service     = var.service
+  environment = var.environment
 
-  rds_config = [
-  {
-    create_global_cluster = var.create_global_cluster
-    cluster_application   = var.application
-    engine                = var.engine                          
-    engine_version        = var.engine_version          
-    database_name         = var.database_name                 
-    deletion_protection   = var.deletion_protection                         
-    cluster_config = [
-      {
-        principal                       = var.principal                   
-        region                          = var.aws_region             
-        engine_mode                     = var.engine_mode         
-        manage_master_user_password     = var.manage_master_user_password                  
-        master_password                 = var.master_password           
-        master_username                 = var.master_username                
-        vpc_security_group_ids          = [module.security_groups.sg_info[join("-", ["rds", var.application, var.functionality])].sg_id]
-        subnet_ids                      = [data.aws_subnet.database_subnet_1.id, data.aws_subnet.database_subnet_2.id]       
-        backup_retention_period         = var.backup_retention_period                       
-        skip_final_snapshot             = var.skip_final_snapshot                  
-        preferred_backup_window         = var.preferred_backup_window         
-        storage_encrypted               = var.storage_encrypted                  
-        kms_key_id                      = module.kms.kms_info[0]["key_arn"]
-        port                            = var.port                  
-        service                         = var.service               
-        enabled_cloudwatch_logs_exports = []                      
-        copy_tags_to_snapshot           = var.copy_tags_to_snapshot
-        cluster_parameter = {
-          family      = var.family                                  
-          description = "Aurora MySQL 5.6 default cluster parameters"
-          parameters = []
-        }
-        instance_parameter = {
-          family      = var.family                                 
-          parameters  = []
-        }
-        cluster_instances = [
-          {
-            instance_class                        = var.instance_class
-            publicly_accessible                   = var.publicly_accessible                
-            auto_minor_version_upgrade            = var.auto_minor_version_upgrade                 
-            performance_insights_enabled          = var.performance_insights_enabled                
-            performance_insights_retention_period = var.performance_insights_retention_period                   
-            monitoring_interval                   = var.monitoring_interval                   
-          }
-        ]
-      }
-    ]
-  }
-]
-depends_on = [module.kms, module.security_groups]
+  # ✅ Consumir local transformado (PC-IAC-026)
+  # Los VPC IDs ya fueron inyectados en locals.tf
+  sg_config = local.sg_config_transformed
+
+  depends_on = [module.vpc]
 }
 
+############################################################################
+# Modulo VPC Endpoints - Base Pragma
+############################################################################
+module "vpc_endpoints" {
+  source = "git::https://github.com/somospragma/cloudops-ref-repo-aws-vpc-endpoint-terraform.git?ref=v1.0.0"
+  
+  providers = {
+    aws.project = aws.principal
+  }
+
+  # Variables obligatorias de nomenclatura
+  client      = var.client
+  project     = var.project
+  environment = var.environment
+
+  # ✅ Consumir local transformado (PC-IAC-026)
+  # Los IDs dinámicos ya fueron inyectados en locals.tf
+  vpc_endpoints = local.vpc_endpoints_transformed
+
+  depends_on = [module.vpc, module.security_groups]
+}

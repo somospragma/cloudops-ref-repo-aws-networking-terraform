@@ -1,191 +1,208 @@
-###########################################
-########## Common variables ###############
-###########################################
+######################################################################
+# Variables Globales
+######################################################################
+variable "region" {
+  type        = string
+  description = "Region AWS"
+}
 
 variable "profile" {
-  type = string
-  description = "Profile name containing the access credentials to deploy the infrastructure on AWS"
-}
-
-variable "common_tags" {
-  type = map(string)
-  description = "Common tags to be applied to the resources"
-}
-
-variable "aws_region" {
-  type = string
-  description = "AWS region where resources will be deployed"
-}
-
-variable "environment" {
-  type = string
-  description = "Environment where resources will be deployed"
+  type        = string
+  description = "Profile cuenta AWS"
 }
 
 variable "client" {
-  type = string
-  description = "Client name"
+  type        = string
+  description = "Nombre del cliente"
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.client))
+    error_message = "El nombre del cliente debe contener solo letras minúsculas, números y guiones."
+  }
+}
+
+variable "environment" {
+  type        = string
+  description = "Entorno de despliegue (dev, qa, pdn)"
+  validation {
+    condition     = contains(["dev", "qa", "pdn"], var.environment)
+    error_message = "El entorno debe ser uno de: dev, qa, pdn."
+  }
 }
 
 variable "project" {
-  type = string  
-  description = "Project name"
+  description = "Nombre del proyecto"
+  type        = string
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.project))
+    error_message = "El nombre del proyecto debe contener solo letras minúsculas, números y guiones."
+  }
 }
 
-variable "application" {
-  type = string
-  description = "Application name"
+variable "common_tags" {
+  type        = map(string)
+  description = "Common tags to be applied to the resources"
 }
 
-variable "functionality" {
-  type = string
-  description = "Functionality name"
+######################################################################
+# Variables VPC
+######################################################################
+variable "cidr_block" {
+  type        = string
+  description = "El bloque CIDR para la VPC"
+  
+  validation {
+    condition     = can(cidrhost(var.cidr_block, 0))
+    error_message = "Must be valid CIDR."
+  }
 }
 
-variable "service" {
-  type = string  
-  description = "Service name"
+variable "instance_tenancy" {
+  type        = string
+  description = "A tenancy option for instances launched into the VPC"
+  default     = "default"
+  validation {
+    condition     = can(regex("^(default|dedicated)$", var.instance_tenancy))
+    error_message = "Invalid tenancy, must be default or dedicated"
+  }
 }
 
-variable "service_name_rds"{
-  type = string  
-  description = "Service name rds"
+variable "enable_dns_hostnames" {
+  type        = bool
+  description = "A boolean flag to enable/disable DNS hostnames in the VPC"
+  default     = true
 }
 
-###########################################
-############# RDS variables ###############
-###########################################
-
-variable "create_global_cluster" {
-  type = bool 
-  description = "If true, a global cluster will be created"
+variable "enable_dns_support" {
+  type        = bool
+  description = "A boolean flag to enable/disable DNS support in the VPC"
+  default     = true
 }
 
-variable "cluster_application" {
-  type = string  
-  description = "Cluster application name"
+variable "flow_log_retention_in_days" {
+  type        = number
+  description = "Días de retención de los flow logs de VPC"
+  default     = 7
 }
 
-variable "engine" {
-  type = string  
-  description = "Name of the database engine to be used for this DB cluster. Valid Values: aurora-mysql, aurora-postgresql, mysql, postgres. (Note that mysql and postgres are Multi-AZ RDS clusters)."
+variable "create_igw" {
+  type        = bool
+  description = "Crear Internet Gateway"
+  default     = true
 }
 
-variable "engine_version" {
-  type = string  
-  description = "Database engine version."
+variable "create_nat" {
+  type        = bool
+  description = "Crear NAT Gateway"
+  default     = true
 }
 
-variable "database_name" {
-  type = string  
-  description = "Data base name"
+variable "subnet_config" {
+  description = "Configuración de subnets"
+  type = map(object({
+    custom_routes = list(object({
+      destination_cidr_block    = string
+      carrier_gateway_id        = optional(string)
+      core_network_arn          = optional(string)
+      egress_only_gateway_id    = optional(string)
+      nat_gateway_id            = optional(string)
+      local_gateway_id          = optional(string)
+      network_interface_id      = optional(string)
+      transit_gateway_id        = optional(string)
+      vpc_endpoint_id           = optional(string)
+      vpc_peering_connection_id = optional(string)
+    }))
+    public      = bool
+    include_nat = optional(bool, false)
+    subnets = list(object({
+      cidr_block        = string
+      availability_zone = string
+    }))
+  }))
 }
 
-variable "deletion_protection" {
-  type = bool  
-  description = "If the DB cluster should have deletion protection enabled. The database can't be deleted when this value is set to true. The default is false."
+######################################################################
+# Variables NAT Gateway
+######################################################################
+variable "nat_mode" {
+  type        = string
+  description = "Modo de NAT Gateway: 'zonal' (uno por AZ) o 'regional' (único para toda la VPC)"
+  default     = "regional"
+  validation {
+    condition     = can(regex("^(zonal|regional)$", var.nat_mode))
+    error_message = "nat_mode debe ser 'zonal' o 'regional'"
+  }
 }
 
-variable "principal" {
-  type = bool 
-  description = "If true, it'll be deploy only one node."
+variable "nat_regional_mode" {
+  type        = string
+  description = "Modo de gestión de IPs para NAT Gateway Regional: 'auto' (AWS gestiona) o 'manual' (especificar EIPs)"
+  default     = "auto"
+  validation {
+    condition     = can(regex("^(auto|manual)$", var.nat_regional_mode))
+    error_message = "nat_regional_mode debe ser 'auto' o 'manual'"
+  }
 }
 
-variable "engine_mode" {
-  type = string
-  description = "Database engine mode. Valid values: global (only valid for Aurora MySQL 1.21 and earlier), parallelquery, provisioned, serverless. Defaults to: provisioned. See the RDS User Guide for limitations when using serverless."
+######################################################################
+# Variables Additional Tags
+######################################################################
+variable "additional_tags" {
+  type        = map(string)
+  description = "Tags adicionales para aplicar a todos los recursos (incluye tags de EKS)"
+  default     = {}
 }
 
-variable "manage_master_user_password" {
-  type = bool
-  description = "Set to true to allow RDS to manage the master user password in Secrets Manager. Cannot be set if master_password is provided."
+######################################################################
+# Variables Security Groups
+######################################################################
+variable "sg_config" {
+  description = "Configuración de Security Groups"
+  type = map(object({
+    description     = string
+    vpc_id          = string
+    service         = string
+    application     = string
+    additional_tags = optional(map(string), {})
+    ingress = list(object({
+      from_port       = number
+      to_port         = number
+      protocol        = string
+      cidr_blocks     = list(string)
+      security_groups = list(string)
+      prefix_list_ids = list(string)
+      self            = bool
+      description     = string
+    }))
+    egress = list(object({
+      from_port       = number
+      to_port         = number
+      protocol        = string
+      cidr_blocks     = list(string)
+      prefix_list_ids = list(string)
+      security_groups = list(string)
+      self            = bool
+      description     = string
+    }))
+  }))
+  default = {}
 }
 
-variable "master_password" {
-  type    = string
-  default = null
-  description = "(Required unless manage_master_user_password is set to true or unless a snapshot_identifier or replication_source_identifier is provided or unless a global_cluster_identifier is provided when the cluster is the 'secondary' cluster of a global database) Password for the master DB user. Note that this may show up in logs, and it will be stored in the state file. Please refer to the RDS Naming Constraints. Cannot be set if manage_master_user_password is set to true."
-}
-
-variable "master_username" {
-  type = string
-  description = "Master username for the database"
-}
-
-variable "backup_retention_period" {
-  type = number
-  description = "Days to retain backups for. Default 1."
-}
-
-variable "skip_final_snapshot" {
-  type = bool
-  description = "Determines whether a final DB snapshot is created before the DB cluster is deleted. If true is specified, no DB snapshot is created. If false is specified, a DB snapshot is created before the DB cluster is deleted, using the value from final_snapshot_identifier. Default is false."
-}
-
-variable "preferred_backup_window" {
-  type = string
-  description = "Daily time range during which the backups happen"
-}
-
-variable "storage_encrypted" {
-  type = bool
-  description = "Service"
-}
-
-variable "kms_key_id" {
-  type = string
-  description = "Amazon Web Services KMS key identifier that is used to encrypt the secret."
-}
-variable "port" {
-  type = string
-  description = "Database port "
-}
-
-variable "copy_tags_to_snapshot" {
-  type = string
-  description = "Copy all Cluster tags to snapshots. Default is false."
-}
-
-variable "family" {
-  type = string
-  description = "The family of the DB cluster parameter group."
-}
-
-variable "instance_class" {
-  type = string
-  description = "Instance class to use. For details on CPU and memory, see Scaling Aurora DB Instances. Aurora uses db.* instance classes/types. Please see AWS Documentation for currently available instance classes and complete details. For Aurora Serverless v2 use db.serverless."
-}
-
-variable "publicly_accessible" {
-  type = bool
-  description = "Bool to control if instance is publicly accessible. Default false. See the documentation on Creating DB Instances for more details on controlling this property."
-}
-
-variable "auto_minor_version_upgrade" {
-  type = bool
-  description = "Indicates that minor engine upgrades will be applied automatically to the DB instance during the maintenance window. Default true."
-}
-
-variable "performance_insights_enabled" {
-  type = bool
-  description = "Specifies whether Performance Insights is enabled or not. NOTE: When Performance Insights is configured at the cluster level through aws_rds_cluster, this argument cannot be set to a value that conflicts with the cluster's configuration."
-}
-
-variable "performance_insights_retention_period" {
-  type    = number
-  default = null
-  description = "Specifies the amount of time to retain performance insights data for. Defaults to 7 days if Performance Insights are enabled. Valid values are 7, month * 31 (where month is a number of months from 1-23), and 731."
-}
-
-variable "monitoring_interval" {
-  type = number
-  description = "Interval, in seconds, between points when Enhanced Monitoring metrics are collected for the DB instance. To disable collecting Enhanced Monitoring metrics, specify 0. The default is 0. Valid Values: 0, 1, 5, 10, 15, 30, 60."
-}
-
-###########################################
-############# KMS variables ###############
-###########################################
-
-variable "enable_key_rotation" {
-  type =bool
+######################################################################
+# Variables VPC Endpoints
+######################################################################
+variable "vpc_endpoints" {
+  type = map(object({
+    vpc_id              = string
+    service_name        = string
+    vpc_endpoint_type   = string
+    private_dns_enabled = optional(bool, false)
+    security_group_ids  = optional(list(string), [])
+    subnet_ids          = optional(list(string), [])
+    route_table_ids     = optional(list(string), [])
+  }))
+  description = <<-EOF
+    Map of VPC Endpoints to create. Key is the endpoint identifier.
+    Leave IDs empty ("", []) to use automatic injection from modules.
+  EOF
+  default = {}
 }

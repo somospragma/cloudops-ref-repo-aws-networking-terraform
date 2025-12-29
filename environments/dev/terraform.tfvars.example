@@ -1,0 +1,117 @@
+######################################################################
+# Variables Generales / Globales
+######################################################################
+region        = "us-east-1"
+profile       = "pra_chaptercloudops_lab"
+client        = "pragma"
+functionality = "networking"
+environment   = "dev"
+
+# Etiquetas comunes
+common_tags = {
+  client      = "pragma"
+  environment = "dev"
+  project     = "eks-platform"
+  owner       = "cloudops"
+  area        = "infrastructure"
+  provisioned = "terraform"
+  application = "networking"
+}
+
+######################################################################
+# Variables VPC
+######################################################################
+# Configuración de red para EKS
+cidr_block                 = "10.0.0.0/16"
+flow_log_retention_in_days = 7
+
+# Configuración de subnets
+subnet_config = {
+  # Subnets públicas - Para Load Balancers y NAT Gateways
+  public = {
+    public      = true
+    include_nat = false
+    subnets = [
+      {
+        cidr_block        = "10.0.1.0/24"
+        availability_zone = "us-east-1a"
+      },
+      {
+        cidr_block        = "10.0.2.0/24"
+        availability_zone = "us-east-1b"
+      },
+      {
+        cidr_block        = "10.0.3.0/24"
+        availability_zone = "us-east-1c"
+      }
+    ]
+    custom_routes = []
+  }
+  
+  # Subnets privadas - Para nodos de EKS
+  private = {
+    public      = false
+    include_nat = true
+    subnets = [
+      {
+        cidr_block        = "10.0.11.0/24"
+        availability_zone = "us-east-1a"
+      },
+      {
+        cidr_block        = "10.0.12.0/24"
+        availability_zone = "us-east-1b"
+      },
+      {
+        cidr_block        = "10.0.13.0/24"
+        availability_zone = "us-east-1c"
+      }
+    ]
+    custom_routes = []
+  }
+  
+  # Subnets para pods - Secondary CIDR para EKS
+  pods = {
+    public      = false
+    include_nat = true
+    subnets = [
+      {
+        cidr_block        = "10.0.21.0/24"
+        availability_zone = "us-east-1a"
+      },
+      {
+        cidr_block        = "10.0.22.0/24"
+        availability_zone = "us-east-1b"
+      },
+      {
+        cidr_block        = "10.0.23.0/24"
+        availability_zone = "us-east-1c"
+      }
+    ]
+    custom_routes = []
+  }
+  
+  # Subnets para bases de datos
+  database = {
+    public      = false
+    include_nat = false
+    subnets = [
+      {
+        cidr_block        = "10.0.31.0/24"
+        availability_zone = "us-east-1a"
+      },
+      {
+        cidr_block        = "10.0.32.0/24"
+        availability_zone = "us-east-1b"
+      },
+      {
+        cidr_block        = "10.0.33.0/24"
+        availability_zone = "us-east-1c"
+      }
+    ]
+    custom_routes = []
+  }
+}
+
+# Gateways
+create_igw = true
+create_nat = true
