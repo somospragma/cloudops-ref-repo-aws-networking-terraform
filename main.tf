@@ -2,7 +2,7 @@
 # Modulo VPC - Networking Base Pragma
 ############################################################################
 module "vpc" {
-  source = "git::https://github.com/somospragma/cloudops-ref-repo-aws-vpc-terraform.git?ref=v1.0.2"
+  source = "git::https://github.com/somospragma/cloudops-ref-repo-aws-vpc-terraform.git?ref=v1.0.3"
   
   providers = {
     aws.project = aws.principal
@@ -40,7 +40,7 @@ module "vpc" {
 # Security Groups - Usando módulo de referencia
 ############################################################################
 module "security_groups" {
-  source = "git::https://github.com/somospragma/cloudops-ref-repo-aws-sg-terraform.git?ref=v1.0.0"
+  source = "git::https://github.com/somospragma/cloudops-ref-repo-aws-sg-terraform.git?ref=v1.0.1"
   
   providers = {
     aws.project = aws.principal
@@ -62,7 +62,7 @@ module "security_groups" {
 # Modulo VPC Endpoints - Base Pragma
 ############################################################################
 module "vpc_endpoints" {
-  source = "git::https://github.com/somospragma/cloudops-ref-repo-aws-vpc-endpoint-terraform.git?ref=v1.0.0"
+  source = "git::https://github.com/somospragma/cloudops-ref-repo-aws-vpc-endpoint-terraform.git?ref=v1.0.1"
   
   providers = {
     aws.project = aws.principal

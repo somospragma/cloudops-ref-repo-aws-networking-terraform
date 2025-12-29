@@ -2,6 +2,20 @@
 
 Todos los cambios notables en esta línea base serán documentados en este archivo.
 
+## [1.0.1] - 2025-12-29
+
+### 🔧 Actualización de Módulos
+- **VPC Module**: Actualizado de v1.0.2 a v1.0.3
+  - Incluye documentación de permisos IAM
+- **VPC Endpoints Module**: Actualizado de v1.0.0 a v1.0.1
+  - Incluye documentación de permisos IAM
+- **Security Groups Module**: Actualizado de v1.0.0 a v1.0.1
+  - Incluye documentación de permisos IAM
+
+### 📚 Mejoras
+- Todos los módulos ahora incluyen documentación completa de permisos IAM
+- Políticas JSON listas para aplicar en cada módulo
+
 ## [1.0.0] - 2024-12-29
 
 ### 🎉 Primera Versión - Línea Base Pragma
