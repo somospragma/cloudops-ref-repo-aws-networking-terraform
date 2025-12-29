@@ -316,7 +316,7 @@ Para preguntas o issues, contactar al equipo de CloudOps.
 - [Permisos IAM](./iam-permissions/README.md) - Documentación de permisos
 - [AWS VPC Documentation](https://docs.aws.amazon.com/vpc/)
 - [AWS VPC Endpoints](https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints.html)
-- [Regional NAT Gateway](https://aws.amazon.com/blogs/networking-and-content-delivery/introducing-regional-nat-gateway/)
-- [Módulo VPC v1.0.2](https://github.com/somospragma/cloudops-ref-repo-aws-vpc-terraform)
-- [Módulo SG v1.0.0](https://github.com/somospragma/cloudops-ref-repo-aws-sg-terraform)
-- [Módulo VPC Endpoints v1.0.0](https://github.com/somospragma/cloudops-ref-repo-aws-vpc-endpoint-terraform)
+- [Regional NAT Gateway](https://docs.aws.amazon.com/vpc/latest/userguide/nat-gateways-regional.html)
+- [Módulo VPC v1.0.3](https://github.com/somospragma/cloudops-ref-repo-aws-vpc-terraform/releases/tag/v1.0.3)
+- [Módulo SG v1.0.1](https://github.com/somospragma/cloudops-ref-repo-aws-sg-terraform/releases/tag/v1.0.1)
+- [Módulo VPC Endpoints v1.0.1](https://github.com/somospragma/cloudops-ref-repo-aws-vpc-endpoint-terraform/releases/tag/v1.0.1)
